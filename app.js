@@ -10,7 +10,8 @@ let state = {
     currentTab: 'all',
     expenses: [],
     budgets: {}, // YYYY-MM keyed object
-    currentMonth: new Date(2026, 3)
+    currentMonth: new Date(2026, 3),
+    editingId: null
 };
 
 function getYYYYMM(date) {
@@ -37,11 +38,7 @@ function loadData() {
     if (saved) {
         state.expenses = JSON.parse(saved);
     } else {
-        state.expenses = [
-            { id: 1, amount: 2500, category: 'food', date: '2026-04-01' },
-            { id: 2, amount: 1200, category: 'daily', date: '2026-04-02' },
-            { id: 3, amount: 8000, category: 'food', date: '2026-04-03' }
-        ];
+        state.expenses = [];
     }
 
     if (savedBudgets) {
@@ -225,20 +222,56 @@ function renderHistory() {
     const relevantExpenses = state.expenses.filter(e => e.date.startsWith(monthStr));
     const sorted = [...relevantExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    sorted.forEach(e => {
-        html += `
-        <div class="history-item fade-in">
-            <div class="hi-cat">${CATEGORY_MAP[e.category]?.emoji || '❔'}</div>
-            <div class="hi-details">
-                <div>${CATEGORY_MAP[e.category]?.name || '不明'}</div>
-                <div class="hi-date">${e.date}</div>
-            </div>
-            <div class="hi-amount">¥${new Intl.NumberFormat('ja-JP').format(e.amount)}</div>
+    if (sorted.length === 0) {
+        html = `
+        <div style="text-align:center; padding: 40px 20px; color: var(--text-sub);">
+            <p style="margin-bottom: 16px;">まだ支出がありません</p>
+            <button class="primary-btn" onclick="document.querySelector('[data-target=\\'view-input\\']').click()" style="width:auto; padding: 10px 20px;">支出を入力する</button>
         </div>`;
-    });
+    } else {
+        sorted.forEach(e => {
+            html += `
+            <div class="history-item fade-in" style="cursor: pointer;" onclick="openEdit(${e.id})">
+                <div class="hi-cat">${CATEGORY_MAP[e.category]?.emoji || '❔'}</div>
+                <div class="hi-details">
+                    <div>${CATEGORY_MAP[e.category]?.name || '不明'}</div>
+                    <div class="hi-date">${e.date}</div>
+                </div>
+                <div class="hi-amount">
+                    ¥${new Intl.NumberFormat('ja-JP').format(e.amount)}
+                </div>
+                <button class="icon-btn delete-btn" onclick="deleteExpense(event, ${e.id})" style="color:var(--danger); width:32px; height:32px; margin-left: 8px;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </div>`;
+        });
+    }
 
     list.innerHTML = html;
 }
+
+// Inline handlers
+window.deleteExpense = function (e, id) {
+    if (e) e.stopPropagation();
+    if (confirm('この支出を削除しますか？')) {
+        state.expenses = state.expenses.filter(exp => exp.id !== id);
+        saveData();
+        updateUI();
+        showToast('削除しました');
+    }
+};
+
+window.openEdit = function (id) {
+    const exp = state.expenses.find(e => e.id === id);
+    if (!exp) return;
+    state.editingId = id;
+    document.getElementById('expense-amount').value = exp.amount;
+    document.querySelector(`input[name="expense_cat"][value="${exp.category}"]`).checked = true;
+    document.getElementById('expense-date').value = exp.date;
+
+    document.querySelector('#view-input h1').innerText = '支出を編集';
+    switchView('view-input');
+};
 
 // --- Interactions ---
 function setupEventListeners() {
@@ -276,6 +309,10 @@ function setupEventListeners() {
 
     // Cancel Input
     document.getElementById('close-input-btn').addEventListener('click', () => {
+        state.editingId = null;
+        document.querySelector('#view-input h1').innerText = '支出を入力';
+        document.getElementById('expense-amount').value = '';
+        document.getElementById('expense-date').valueAsDate = new Date();
         switchView('view-dashboard');
         document.querySelector('[data-target="view-dashboard"]').classList.add('active');
     });
@@ -288,12 +325,26 @@ function setupEventListeners() {
 
         if (!amtInput.value || isNaN(amtInput.value)) return;
 
-        addExpense(amtInput.value, catInput.value, dateInput.value);
+        if (state.editingId) {
+            const index = state.expenses.findIndex(e => e.id === state.editingId);
+            if (index !== -1) {
+                state.expenses[index].amount = parseInt(amtInput.value);
+                state.expenses[index].category = catInput.value;
+                state.expenses[index].date = dateInput.value;
+            }
+            state.editingId = null;
+            showToast('更新しました');
+            saveData();
+        } else {
+            addExpense(amtInput.value, catInput.value, dateInput.value);
+            showToast('保存しました');
+        }
 
         // Reset input
         amtInput.value = '';
+        document.getElementById('expense-date').valueAsDate = new Date();
+        document.querySelector('#view-input h1').innerText = '支出を入力';
 
-        showToast();
         switchView('view-dashboard');
         document.querySelector('[data-target="view-dashboard"]').classList.add('active');
         updateUI();
@@ -377,8 +428,9 @@ function switchView(viewId) {
     document.getElementById(viewId).classList.add('active');
 }
 
-function showToast() {
+function showToast(message = '保存しました') {
     const toast = document.getElementById('toast');
+    toast.innerText = message;
     toast.classList.add('show');
     setTimeout(() => {
         toast.classList.remove('show');
