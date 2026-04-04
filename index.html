@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>あといくら？メモ</title>
+
+    <!-- PWA / iOS 対応 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#5e5ce6">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="あといくら？">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Dashboard View -->
+        <main id="view-dashboard" class="view active">
+            <header class="top-nav">
+                <button class="icon-btn" id="prev-month-btn">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+                <h1 id="current-month">2026年4月</h1>
+                <div style="display:flex;">
+                    <button class="icon-btn" id="settings-btn">
+                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2"
+                            fill="none">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="next-month-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2"
+                            fill="none">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <div id="no-budget-prompt" class="card fade-in"
+                style="display: none; text-align: center; padding: 40px 20px;">
+                <p style="margin-bottom: 24px; color: var(--text-sub); font-weight: 600;">今月の予算が未設定です</p>
+                <button class="primary-btn pulse" id="go-to-settings-btn"
+                    style="width: auto; padding: 14px 28px;">予算を設定する</button>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="all">全体</button>
+                <button class="tab" data-tab="food">食費</button>
+                <button class="tab" data-tab="daily">日用品</button>
+                <button class="tab" data-tab="other">その他</button>
+            </div>
+
+            <div class="card summary-card fade-in" id="summary-area">
+                <div class="budget-info">
+                    <span class="label">今月予算</span>
+                    <span class="value" id="disp-budget">¥0</span>
+                </div>
+                <div class="budget-info">
+                    <span class="label">使用済み</span>
+                    <span class="value" id="disp-spent">¥0</span>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="remaining-info">
+                    <span class="label">残り</span>
+                    <span class="value hero" id="disp-remaining">¥0</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="main-progress"></div>
+                </div>
+                <div class="status-msg" id="status-msg">👍 順調です</div>
+            </div>
+
+            <div class="card pacing-card slide-up" id="pacing-area">
+                <div class="days-left">
+                    残り日数：<strong id="disp-days-left">0日</strong>
+                </div>
+                <div class="pacing-grid">
+                    <div class="pacing-item">
+                        <span class="label">■ 1日あたり</span>
+                        <span class="value" id="disp-daily">¥0</span>
+                    </div>
+                    <div class="pacing-item">
+                        <span class="label">■ 1週間目安</span>
+                        <span class="value" id="disp-weekly">¥0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-breakdown slide-up" id="category-area">
+                <h3>カテゴリー別</h3>
+                <div class="category-list" id="category-list">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div style="height: 100px;"></div> <!-- Bottom padding -->
+        </main>
+
+        <!-- Input Expense View -->
+        <main id="view-input" class="view">
+            <header class="top-nav">
+                <div style="width:24px"></div>
+                <h1>支出を入力</h1>
+                <button class="icon-btn text-btn" id="close-input-btn">キャンセル</button>
+            </header>
+
+            <div class="input-form">
+                <div class="amount-input-group">
+                    <span class="currency">¥</span>
+                    <input type="number" id="expense-amount" placeholder="0" inputmode="numeric">
+                </div>
+
+                <div class="category-selector">
+                    <h3>カテゴリ</h3>
+                    <div class="radio-group">
+                        <label class="radio-btn">
+                            <input type="radio" name="expense_cat" value="food" checked>
+                            <span class="btn-content">🍙 食費</span>
+                        </label>
+                        <label class="radio-btn">
+                            <input type="radio" name="expense_cat" value="daily">
+                            <span class="btn-content">🧴 日用品</span>
+                        </label>
+                        <label class="radio-btn">
+                            <input type="radio" name="expense_cat" value="other">
+                            <span class="btn-content">💡 その他</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="date-selector">
+                    <h3>日付</h3>
+                    <input type="date" id="expense-date">
+                </div>
+
+                <button class="primary-btn pulse" id="save-expense-btn">保存する</button>
+            </div>
+        </main>
+
+        <!-- Budget Setup View -->
+        <main id="view-budget" class="view">
+            <header class="top-nav">
+                <div style="width:24px"></div>
+                <h1>今月の予算設定</h1>
+                <button class="icon-btn text-btn" id="close-budget-btn">キャンセル</button>
+            </header>
+
+            <div class="input-form">
+                <div class="date-selector" style="margin-bottom: 24px;">
+                    <h3 class="input-section-title">対象年月</h3>
+                    <select id="budget-month-select" class="form-select">
+                        <option value="2026-03">2026年3月</option>
+                        <option value="2026-04" selected>2026年4月</option>
+                        <option value="2026-05">2026年5月</option>
+                        <option value="2026-06">2026年6月</option>
+                    </select>
+                </div>
+
+                <h3 class="input-section-title">全体予算</h3>
+                <div class="amount-input-group compact">
+                    <span class="currency">¥</span>
+                    <input type="number" id="budget-all" placeholder="0" inputmode="numeric">
+                </div>
+
+                <h3 class="input-section-title">カテゴリ別予算</h3>
+                <div class="category-inputs">
+                    <div class="cat-input-row">
+                        <span class="cat-label">🍙 食費</span>
+                        <div class="amount-input-group compact mini">
+                            <span class="currency">¥</span>
+                            <input type="number" id="budget-food" placeholder="0" inputmode="numeric">
+                        </div>
+                    </div>
+                    <div class="cat-input-row">
+                        <span class="cat-label">🧴 日用品</span>
+                        <div class="amount-input-group compact mini">
+                            <span class="currency">¥</span>
+                            <input type="number" id="budget-daily" placeholder="0" inputmode="numeric">
+                        </div>
+                    </div>
+                    <div class="cat-input-row">
+                        <span class="cat-label">💡 その他</span>
+                        <div class="amount-input-group compact mini">
+                            <span class="currency">¥</span>
+                            <input type="number" id="budget-other" placeholder="0" inputmode="numeric">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="primary-btn pulse" id="save-budget-btn" style="margin-top: 24px;">保存する</button>
+            </div>
+            <div style="height: 100px;"></div>
+        </main>
+
+        <!-- Detail View (Future use or simple list) -->
+        <main id="view-details" class="view">
+            <header class="top-nav">
+                <h1>利用履歴</h1>
+            </header>
+            <div class="history-list" id="history-list">
+                <!-- Populated by JS -->
+            </div>
+            <div style="height: 100px;"></div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="view-dashboard">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>ホーム</span>
+            </button>
+            <button class="nav-item fab" data-target="view-input">
+                <div class="fab-inner">
+                    <svg viewBox="0 0 24 24" width="28" height="28" stroke="white" stroke-width="2" fill="none">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                </div>
+            </button>
+            <button class="nav-item" data-target="view-details">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span>履歴</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">保存しました</div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

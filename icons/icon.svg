@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+  <rect width="512" height="512" fill="#f4f5f8"/>
+  <rect x="76" y="76" width="360" height="360" rx="60" fill="#5e5ce6"/>
+  <text x="256" y="290" font-family="-apple-system, sans-serif" font-size="160" font-weight="bold" fill="#ffffff" text-anchor="middle">¥</text>
+</svg>
