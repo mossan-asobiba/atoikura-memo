@@ -10,7 +10,7 @@ let state = {
     currentTab: 'all',
     expenses: [],
     budgets: {}, // YYYY-MM keyed object
-    currentMonth: new Date(2026, 3),
+    currentMonth: (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth()); })(),
     editingId: null
 };
 
@@ -80,16 +80,21 @@ function getCalculatedData(tab) {
         return { notSet: true };
     }
 
-    const today = new Date(2026, 3, 16);
-    const isCurrentMonthMock = (state.currentMonth.getFullYear() === 2026 && state.currentMonth.getMonth() === 3);
+    const today = new Date();
+    const y = state.currentMonth.getFullYear();
+    const m = state.currentMonth.getMonth();
+    const lastDay = new Date(y, m + 1, 0);
 
     let daysLeft = 0;
-    if (isCurrentMonthMock) {
-        const lastDay = new Date(2026, 4, 0);
-        daysLeft = lastDay.getDate() - today.getDate();
+    if (today.getFullYear() === y && today.getMonth() === m) {
+        // 今月：今日を含めて残り日数（月末まで）
+        daysLeft = lastDay.getDate() - today.getDate() + 1;
+    } else if (today < new Date(y, m, 1)) {
+        // 未来の月：その月の全日数
+        daysLeft = lastDay.getDate();
     } else {
-        const lastDay = new Date(state.currentMonth.getFullYear(), state.currentMonth.getMonth() + 1, 0);
-        daysLeft = lastDay.getDate(); // If future, show all days. If past, whatever.
+        // 過去の月：残り0
+        daysLeft = 0;
     }
 
     let relevantExpenses = state.expenses.filter(e => e.date.startsWith(monthStr));
